@@ -15,3 +15,7 @@ SINGLE_QUOTES_VALUE_PATTERN = r"""'(?P<s_q_value>(?:[:a-zA-Z\*0-9=+%#\-\/\\,_".$
 
 
 qradar_query_details = PlatformDetails(**QRADAR_QUERY_DETAILS)
+
+
+class B3:
+    ...
