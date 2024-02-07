@@ -5,3 +5,11 @@ LOGPOINT_QUERY_DETAILS = {
     "platform_name": "Query",
     "group_id": "logpoint",
 }
+
+
+class B1:
+    ...
+
+
+class B2:
+    ...
