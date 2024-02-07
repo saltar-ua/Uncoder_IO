@@ -39,3 +39,7 @@ CHRONICLE_RULE_DETAILS = {
 
 chronicle_query_details = PlatformDetails(**CHRONICLE_QUERY_DETAILS)
 chronicle_rule_details = PlatformDetails(**CHRONICLE_RULE_DETAILS)
+
+
+class D1:
+    ...
