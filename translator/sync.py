@@ -1,10 +1,29 @@
+import datetime
 import os
+import ssl
 from os.path import basename, dirname, join
 
 from github import Github, UnknownObjectException
 from github import InputGitTreeElement
 import gitlab
 from github.Auth import AppAuthToken
+from opensearchpy import OpenSearch
+from opensearchpy.connection import create_ssl_context
+from opensearchpy import Document, Date, Keyword, Object
+
+INDEX_NAME = "github-commit-sync"
+
+
+class GitLabSyncCommitGitHub(Document):
+    gitlab = Object()
+    github = Object()
+    created = Date()
+
+    class Index:
+        name = INDEX_NAME
+
+    def save(self, ** kwargs):
+        return super(GitLabSyncCommitGitHub, self).save(** kwargs)
 
 
 class GitLabToGitHubSync:
@@ -18,6 +37,56 @@ class GitLabToGitHubSync:
     auth = AppAuthToken(token=GITHUB_TOKEN)
     g = Github(auth=auth)
     repo = g.get_user().get_repo('Uncoder_IO')  # repo name
+
+    ssl_context = create_ssl_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    OS_LOG_HOST = os.environ.get("OS_LOG_HOST")
+    OS_LOG_PORT = os.environ.get("OS_LOG_PORT")
+    OS_LOG_USER = os.environ.get("OS_LOG_USER")
+    OS_LOG_PASS = os.environ.get("OS_LOG_PASS")
+    os_log_client = OpenSearch(
+        hosts=[{'host': OS_LOG_HOST, 'port': OS_LOG_PORT}],
+        http_compress=True,
+        scheme="https",
+        http_auth=(OS_LOG_USER, OS_LOG_PASS),
+        verify_certs=False
+    )
+    GitLabSyncCommitGitHub.init(using=os_log_client)
+
+    def __get_saved_commits_info(self, branch_name: str):
+        try:
+            query = {
+              "query": {
+                "bool": {
+                  "must": [
+                    {
+                      "term": {
+                        "gitlab.branch": {
+                          "value": branch_name
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+            saved_commits_search = self.os_log_client.search(index=INDEX_NAME, body=query)
+            hits = saved_commits_search.get("hits", {}).get("hits", [])
+            return [
+                doc.get("_source", {}).get("gitlab", {}).get("commit_sha")
+                for doc in hits
+            ]
+        except Exception as err:
+            raise Exception("Couldn't get saved branch commits")
+
+    def __push_commits_info_to_opensearch(self, github: dict, gitlab: dict):
+        doc = GitLabSyncCommitGitHub(github=github, gitlab=gitlab, created=datetime.datetime.now())
+        response = doc.save(using=self.os_log_client)
+        if response == "created":
+            return
+        raise Exception(f"Pushed commits sha not saved! Status: {response}")
 
     @staticmethod
     def __prepare_diff(diff: list):
@@ -33,10 +102,12 @@ class GitLabToGitHubSync:
                 "type": "blob"
             }
 
-    def __prepare_gitlab_commit_info(self, commit) -> dict:
+    def prepare_gitlab_commit_info(self, commit) -> dict:
         return {
             "author": commit.committer_name,
+            "sha": commit.id,
             "commit_message": commit.message,
+            "commit_title": commit.title,
             "changes": self.__prepare_diff(commit.diff())
         }
 
@@ -50,6 +121,7 @@ class GitLabToGitHubSync:
     def __get_gitlab_commits(self, commit_sha: str):
         origin_commit = self.project.commits.get(commit_sha)
         branch = self.__get_gitlab_branch_from_commit(commit=origin_commit)
+        saved_commits = self.__get_saved_commits_info(branch_name=branch)
         search_parent = True
         parent_ids = origin_commit.parent_ids
         parent_commits = []
@@ -57,7 +129,7 @@ class GitLabToGitHubSync:
             for parent_commit_sha in parent_ids:
                 parent_commit = self.project.commits.get(parent_commit_sha)
                 parent_commit_branch = self.__get_gitlab_branch_from_commit(commit=parent_commit)
-                if branch == parent_commit_branch:
+                if branch == parent_commit_branch and parent_commit.id not in saved_commits:
                     parent_commits.append(parent_commit)
                     parent_ids.extend(parent_commit.parent_ids)
                 else:
@@ -67,7 +139,7 @@ class GitLabToGitHubSync:
         reversed_parent_commits.append(origin_commit)
         return {
             "branch": branch,
-            "commits": [self.__prepare_gitlab_commit_info(commit=c) for c in reversed_parent_commits]
+            "commits": [self.prepare_gitlab_commit_info(commit=c) for c in reversed_parent_commits]
         }
 
     def create_new_github_branch(self, branch_name: str):
@@ -82,8 +154,8 @@ class GitLabToGitHubSync:
             print("Branch not exist. Creating new one...")
             return self.create_new_github_branch(branch_name=branch)
 
-    def push_files_to_github(self, payload: dict, branch: str):
-        branch_ref = self.checkout_github_branch(branch=branch)
+    def push_files_to_github(self, payload: dict, gitlab_branch: str):
+        branch_ref = self.checkout_github_branch(branch=gitlab_branch)
         branch_sha = branch_ref.object.sha
         base_tree = self.repo.get_git_tree(branch_sha)
 
@@ -101,19 +173,20 @@ class GitLabToGitHubSync:
 
         tree = self.repo.create_git_tree(element_list, base_tree)
         parent = self.repo.get_git_commit(branch_sha)
-        commit = self.repo.create_git_commit(payload.get("commit_message"), tree, [parent])
+        commit = self.repo.create_git_commit(
+            message=payload.get("commit_message"),
+            tree=tree,
+            parents=[parent])
         branch_ref.edit(commit.sha)
-
-    def __get_github_commits(self, branch_name: str):
-        branch = self.repo.get_branch(branch=branch_name)
-        commit = branch.commit
-        return 3
+        self.__push_commits_info_to_opensearch(
+            gitlab={"branch": gitlab_branch, "commit_sha": payload.get("sha")},
+            github={"branch": gitlab_branch, "commit_sha": commit.sha}
+        )
 
     def run(self, commit_sha: str):
         gitlab_commits_info = self.__get_gitlab_commits(commit_sha=commit_sha)
-        github_commits_count = self.__get_github_commits(branch_name=gitlab_commits_info.get("branch"))
-        for gitlab_commit_info in gitlab_commits_info.get("commits", [])[github_commits_count:]:
-            self.push_files_to_github(payload=gitlab_commit_info, branch=gitlab_commits_info.get("branch"))
+        for gitlab_commit_info in gitlab_commits_info.get("commits", []):
+            self.push_files_to_github(payload=gitlab_commit_info, gitlab_branch=gitlab_commits_info.get("branch"))
 
 
 if __name__ == "__main__":
