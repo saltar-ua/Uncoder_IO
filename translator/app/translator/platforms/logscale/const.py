@@ -28,3 +28,6 @@ LOGSCALE_ALERT_DETAILS = {
 
 logscale_query_details = PlatformDetails(**LOGSCALE_QUERY_DETAILS)
 logscale_alert_details = PlatformDetails(**LOGSCALE_ALERT_DETAILS)
+
+class K:
+    ...
