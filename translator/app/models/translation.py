@@ -41,3 +41,7 @@ class Platform(BaseModel):
     group_id: str
     renders: Optional[list]
     parsers: Optional[list]
+
+
+class Test:
+    ...
