@@ -2,6 +2,10 @@ import re
 from typing import Optional, Union
 
 
+class Test:
+    ...
+
+
 def get_match_group(match: re.Match, group_name: str) -> Optional[str]:
     try:
         return match.group(group_name)
