@@ -49,19 +49,16 @@ class MicrosoftSentinelRuleRender(MicrosoftSentinelQueryRender):
     field_value_map = MicrosoftSentinelRuleFieldValue(or_token=or_token)
 
     def __create_mitre_threat(self, meta_info: MetaInfoContainer) -> tuple[list, list]:
-        tactics = set()
+        tactics = []
         techniques = []
 
-        for tactic in meta_info.mitre_attack.get("tactics"):
-            tactics.add(tactic["tactic"])
+        for tactic in meta_info.mitre_attack.get("tactics", []):
+            tactics.append(tactic["tactic"])
 
-        for technique in meta_info.mitre_attack.get("techniques"):
-            if technique.get("tactic"):
-                for tactic in technique["tactic"]:
-                    tactics.add(tactic)
+        for technique in meta_info.mitre_attack.get("techniques", []):
             techniques.append(technique["technique_id"])
 
-        return sorted(tactics), sorted(techniques)
+        return tactics, techniques
 
     def finalize_query(
         self,
@@ -71,8 +68,6 @@ class MicrosoftSentinelRuleRender(MicrosoftSentinelQueryRender):
         meta_info: Optional[MetaInfoContainer] = None,
         source_mapping: Optional[SourceMapping] = None,  # noqa: ARG002
         not_supported_functions: Optional[list] = None,
-        *args,  # noqa: ARG002
-        **kwargs,  # noqa: ARG002
     ) -> str:
         query = super().finalize_query(prefix=prefix, query=query, functions=functions)
         rule = copy.deepcopy(DEFAULT_MICROSOFT_SENTINEL_RULE)

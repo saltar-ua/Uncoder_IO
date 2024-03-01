@@ -43,10 +43,9 @@ class SplunkAlertRender(SplunkQueryRender):
     def __create_mitre_threat(meta_info: MetaInfoContainer) -> dict:
         techniques = {"mitre_attack": []}
 
-        for technique in meta_info.mitre_attack.get("techniques"):
+        for technique in meta_info.mitre_attack.get("techniques", []):
             techniques["mitre_attack"].append(technique["technique_id"])
 
-        techniques["mitre_attack"].sort()
         return techniques
 
     def finalize_query(
@@ -57,8 +56,6 @@ class SplunkAlertRender(SplunkQueryRender):
         meta_info: Optional[MetaInfoContainer] = None,
         source_mapping: Optional[SourceMapping] = None,  # noqa: ARG002
         not_supported_functions: Optional[list] = None,
-        *args,  # noqa: ARG002
-        **kwargs,  # noqa: ARG002
     ) -> str:
         query = super().finalize_query(prefix=prefix, query=query, functions=functions)
         rule = DEFAULT_SPLUNK_ALERT.replace("<query_place_holder>", query)
