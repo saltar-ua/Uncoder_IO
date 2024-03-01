@@ -29,3 +29,7 @@ class ChronicleMappings(BasePlatformMappings):
 
 
 chronicle_mappings = ChronicleMappings(platform_dir="chronicle")
+
+
+class ApprovedChange:
+    ...

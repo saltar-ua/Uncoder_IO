@@ -57,3 +57,7 @@ class RenderCTIManager(Manager):
 parser_manager = ParserManager()
 render_manager = RenderManager()
 render_cti_manager = RenderCTIManager()
+
+
+class NewTestManager:
+    ...
