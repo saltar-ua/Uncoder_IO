@@ -1,6 +1,6 @@
 {
   "credential_access": {
-    "external_id": "TA0006",
+    "external_id": "TA0006___",
     "url": "https://attack.mitre.org/tactics/TA0006",
     "tactic": "Credential Access"
   },

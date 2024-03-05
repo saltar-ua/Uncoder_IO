@@ -1,6 +1,6 @@
 {
   "t1047": {
-    "technique_id": "T1047",
+    "technique_id": "T1047+++",
     "technique": "Windows Management Instrumentation",
     "url": "https://attack.mitre.org/techniques/T1047",
     "tactic": [

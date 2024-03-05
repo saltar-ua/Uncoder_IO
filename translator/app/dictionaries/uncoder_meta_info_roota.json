@@ -1,6 +1,6 @@
 [
   {
-    "title": "Severity",
+    "title": "Severity___",
     "sectionRegExp": "^severity:",
     "dictionary": [
       { "name": "low", "description": "Low severity rules should be used as part of correlations, or to support triage and enrich the analysis environment" },

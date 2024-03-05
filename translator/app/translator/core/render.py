@@ -194,8 +194,6 @@ class BaseQueryRender:
         meta_info: Optional[MetaInfoContainer] = None,
         source_mapping: Optional[SourceMapping] = None,  # noqa: ARG002
         not_supported_functions: Optional[list] = None,
-        *args,  # noqa: ARG002
-        **kwargs,  # noqa: ARG002
     ) -> str:
         query = self.query_pattern.format(prefix=prefix, query=query, functions=functions).strip()
         query = self.wrap_query_with_meta_info(meta_info=meta_info, query=query)
@@ -230,7 +228,7 @@ class BaseQueryRender:
 
         return result
 
-    def _get_source_mappings(self, source_mapping_ids: list[str]) -> list[SourceMapping]:
+    def __get_source_mappings(self, source_mapping_ids: list[str]) -> list[SourceMapping]:
         source_mappings = []
         for source_mapping_id in source_mapping_ids:
             if source_mapping := self.mappings.get_source_mapping(source_mapping_id):
@@ -243,7 +241,7 @@ class BaseQueryRender:
 
     def generate(self, query: list, meta_info: MetaInfoContainer, functions: ParsedFunctions) -> str:
         queries_map = {}
-        source_mappings = self._get_source_mappings(meta_info.source_mapping_ids)
+        source_mappings = self.__get_source_mappings(meta_info.source_mapping_ids)
 
         for source_mapping in source_mappings:
             prefix = self.generate_prefix(source_mapping.log_source_signature)
@@ -260,3 +258,6 @@ class BaseQueryRender:
             queries_map[source_mapping.source_id] = finalized_query
 
         return self.finalize(queries_map)
+
+class Test444:
+    ...

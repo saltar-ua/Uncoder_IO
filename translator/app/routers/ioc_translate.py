@@ -46,3 +46,6 @@ def parse_and_translate_iocs(
 
     info_message = InfoMessage(message=translations, severity="error")
     return OneTranslationCTIData(info=info_message, status=status, target_siem_type=platform.name)
+
+class Test45:
+    ...

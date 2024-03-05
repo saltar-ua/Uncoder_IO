@@ -14,3 +14,12 @@ class OneTranslationCTIData(BaseModel):
     status: bool
     translations: Optional[list] = None
     target_siem_type: str
+
+
+class Test2:
+    ...
+
+class Test3:
+    ...
+
+print(OneTranslationCTIData().translations)

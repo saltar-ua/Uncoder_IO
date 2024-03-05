@@ -88,3 +88,6 @@ def get_all_platforms() -> list:
             id="ioc", name="IOCs", code="ioc", group_name="IOCs", group_id="ioc", renders=CTIConverter().get_renders()
         ),
     ]
+
+class Test51:
+    ...

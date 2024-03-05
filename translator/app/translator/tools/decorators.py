@@ -15,13 +15,16 @@ def handle_translation_exceptions(func: Callable[..., ...]) -> Callable[..., tup
             return False, str(err)
         except Exception as err:
             print(f"Unexpected error. {err!s}")
-            return False, "Unexpected error. To resolve it, please, contact us."
+            return False, "Unexpected error. To resolve it, please, contact us via GitHub."
         else:
             if result:
                 print("Translated successfully.")
                 return True, result
 
             print("Unexpected error.")
-            return False, "Unexpected error. To resolve it, please, contact us."
+            return False, "Unexpected error. To resolve it, please, contact us via GitHub."
 
     return exception_handler
+
+class Test767:
+    ...

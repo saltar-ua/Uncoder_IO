@@ -1,6 +1,6 @@
 [
   {
-    "title": "Status",
+    "title": "Status____",
     "sectionRegExp": "^status:",
     "dictionary": [
       { "name": "stable", "description": "Rule is considered as stable and may be used in production systems or dashboards" },
