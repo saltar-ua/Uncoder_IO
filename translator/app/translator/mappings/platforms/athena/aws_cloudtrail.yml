@@ -11,6 +11,7 @@ default_log_source:
 
 field_mapping:
   eventSource: api.service.name
+  eventSource2: api.service.name
   eventName: api.operation
   AdditionalEventData: additionalEventData
   additionalEventData.MFAUsed: JSON_VALUE(unmapped['additionalEventData'], 'strict$.MFAUsed')
