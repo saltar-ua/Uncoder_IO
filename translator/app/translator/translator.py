@@ -64,3 +64,5 @@ class SiemConverter:
 
     def get_renders(self) -> list:
         return self.renders.get_platforms_details
+
+print("Test2")
